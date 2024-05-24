@@ -5,6 +5,7 @@ from collections import OrderedDict
 from itertools import chain
 from functools import total_ordering
 import argparse
+import re
 
 from .mesonlib import (
     HoldableObject,
@@ -681,20 +682,15 @@ class OptionStore:
         from .compilers import all_languages
         for lang in all_languages:
             self.all_languages.add(lang)
+        self.build_options = None
 
-    def __len__(self):
-        return len(self.d)
+    def add_system_option(self, name, value_object):
+        cname = self.form_canonical_keystring(name)
+        self.options[cname] = value_object
 
-    def ensure_key(self, key: T.Union[OptionKey, str]) -> OptionKey:
-        if isinstance(key, str):
-            return OptionKey(key)
-        return key
-
-    def get_value_object(self, key: T.Union[OptionKey, str]) -> 'UserOption[T.Any]':
-        return self.d[self.ensure_key(key)]
-
-    def get_value(self, key: T.Union[OptionKey, str]) -> 'T.Any':
-        return self.get_value_object(key).value
+    def add_project_option(self, name, subproject, keystr, value_object):
+        cname = self.form_canonical_keystring(name, subproject)
+        self.options[keystr] = value_object
 
     def add_system_option(self, key: T.Union[OptionKey, str], valobj: 'UserOption[T.Any]'):
         key = self.ensure_key(key)
@@ -809,3 +805,7 @@ class OptionStore:
 
     def is_module_option(self, key: OptionKey) -> bool:
         return key in self.module_options
+
+    def get_value_for(self, name, subproject=None):
+        cname = self.form_canonical_keystring(name, subproject)
+        return self.options[cname].value
