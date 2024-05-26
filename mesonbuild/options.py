@@ -694,6 +694,7 @@ class OptionStore:
         return basic + build
 
     def add_system_option(self, name, value_object):
+        assert isinstance(name, str)
         cname = self.form_canonical_keystring(name)
         # FIXME; transfer the old value for combos etc.
         if cname not in self.options:
