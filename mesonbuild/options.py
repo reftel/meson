@@ -216,6 +216,8 @@ class OptionKey:
 
     def as_root(self) -> 'OptionKey':
         """Convenience method for key.evolve(subproject='')."""
+        if self.subproject is None or self.subproject == '':
+            return self
         return self.evolve(subproject='')
 
     def as_build(self) -> 'OptionKey':
@@ -855,7 +857,7 @@ class OptionStore:
                 prefix = self.get_value_for('prefix')
                 new_value = self.sanitize_dir_option_value(prefix, key, new_value)
         if key not in self.options:
-           raise MesonException(f'Internal error, tried to access non-existing option {key.name}.')
+           raise MesonException(f'Unknown options: "{key.name}" not found.')
         valobj = self.options[key]
         changed = valobj.set_value(new_value)
         if valobj.readonly and changed:
@@ -924,6 +926,11 @@ class OptionStore:
 
     def remove(self, key):
         del self.options[key]
+        try:
+            self.project_options.remove(key)
+        except KeyError:
+            pass
+
 
     def __contains__(self, key):
         key = self.ensure_and_validate_key(key)
@@ -1111,7 +1118,7 @@ class OptionStore:
             if key.subproject is None:
                 projectkey = key.evolve(subproject='')
                 if key in self.options:
-                    self.options[key].set_value(valstr)
+                    self.set_value(key, valstr)
                 elif projectkey in self.options:
                     self.options[projectkey].set_value(valstr)
                 else:
